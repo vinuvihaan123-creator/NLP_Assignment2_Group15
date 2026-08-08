@@ -2,24 +2,48 @@ Dataset link: https://www.kaggle.com/datasets/gowrishankarp/newspaper-text-summa
 
 # AI-Based Text Summarization System
 
-This workspace contains a lightweight transformer-style text summarization demo built around the CNN/DailyMail CSV files in the `cnn_dailymail` folder.
+An AI-based text summarization system built around the CNN/DailyMail dataset, using pre-trained
+Transformer encoder-decoder models (BART, T5, PEGASUS) from Hugging Face for abstractive
+summarization, with an extractive (TF-IDF sentence-scoring) fallback when `torch`/`transformers`
+or the models themselves are unavailable.
 
 ## What is included?
-- A Python script that loads the validation split and generates sample summaries from article text.
-- A simple extractive summarization approach that selects the most informative sentences.
-- A clear entry point for extending the solution to pretrained transformer models such as T5, BART, or PEGASUS.
+- `summarization.py`: loads a CNN/DailyMail-format CSV, generates abstractive summaries with
+  BART (`facebook/bart-large-cnn`), T5 (`t5-base`), or PEGASUS (`google/pegasus-cnn_dailymail`),
+  and evaluates them with ROUGE-1/2/L, BLEU, Perplexity, and BERTScore.
+- `tests/test_summarization.py`: unit tests covering the extractive fallback path.
+- `run_chunk.py`: helper for running `evaluate_model()` over a slice of the dataset (`start:end`),
+  used to process large runs in resumable batches on CPU.
+- `parsed_results_50.json`: raw per-example results (reference, generated summary, and all
+  metrics) from a 50-article run per model.
+- `Group_15_NLP_Assignment2.pdf`: the project report, including the real model comparison.
 
-## Files
-- `text_summarization_demo.py`: runnable summarization demo
-- `cnn_dailymail/validation.csv`: dataset used for the sample run
-- https://www.kaggle.com/datasets/gowrishankarp/newspaper-text-summarization-cnn-dailymail
+## Setup
+Install dependencies (no `requirements.txt` is currently pinned in this repo):
+```bash
+pip install torch transformers rouge_score nltk bert_score sentencepiece
+```
+Models are downloaded from the Hugging Face Hub on first use and cached locally.
+
+## Dataset
+`summarization.py` expects a CSV with `id`, `article`, and `highlights` columns, placed at
+`cnn_dailymail/<name>.csv` (this folder is gitignored, so bring your own copy). Get it from
+Kaggle (link above) or the Hugging Face mirror, e.g.:
+```python
+from datasets import load_dataset
+load_dataset("abisee/cnn_dailymail", "3.0.0", split="validation[:50]")
+```
 
 ## Run
 ```bash
-cd /Users/vinothinivinu/Downloads/NLP2
-/opt/homebrew/bin/python3.13 text_summarization_demo.py
-
+python summarization.py --model bart --limit 10 --dataset validation.csv
+python summarization.py --model all --limit 50 --dataset validation.csv   # run all 3 models
 ```
+`--model` accepts `bart`, `t5`, `pegasus`, or `all`. `--limit` caps how many articles to process.
 
 ## Notes
-The current implementation uses an extractive approach for reliable local execution. It can be upgraded to pretrained abstractive models such as `facebook/bart-large-cnn` or `google/pegasus-cnn_dailymail` for more human-like summaries.
+If `torch`/`transformers` aren't installed, or a model fails to load (e.g. no network access and
+nothing cached), `generate_summary()` silently falls back to `tfidf_summary()`, a simple
+extractive baseline. A previous version of this code always hit that fallback due to
+`from_pretrained(..., local_files_only=True)` blocking downloads entirely; that flag has since
+been removed so the abstractive models run for real.
