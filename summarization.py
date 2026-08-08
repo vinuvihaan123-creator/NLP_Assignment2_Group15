@@ -185,7 +185,7 @@ def load_tokenizer(model_name: str):
         return None
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
     except Exception as exc:
         logging.error("tokenizer could not be loaded for %s: %s", model_name, exc)
         return None
@@ -252,7 +252,7 @@ def load_seq2seq_model(model_name: str):
     logging.info(f"Loading model: {model_name}")
 
     try:
-        model = AutoModelForSeq2SeqLM.from_pretrained(model_name, local_files_only=True)
+        model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
     except Exception as exc:
         logging.error("model could not be loaded for %s: %s", model_name, exc)
         return None
@@ -622,45 +622,45 @@ if __name__ == "__main__":
     main()
 
 
+# ==========================================================
+# Real execution log (2026-08-08), after fixing the
+# local_files_only=True bug that previously made every model
+# silently fall back to the extractive tfidf_summary() path.
+# Command: python summarization.py --model all --limit 50 --dataset validation.csv
+# (run in chunked batches per model to fit CPU runtime per execution)
+# Dataset: 50 real CNN/DailyMail validation examples (incl. the
+# Sally Forrest article) pulled from the abisee/cnn_dailymail
+# dataset on Hugging Face.
+# ==========================================================
+
 # ======================
-# Example: 1
+# Example: 1 (Sally Forrest)
 
 # Reference:
 #  Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films died on March 15 . Forrest, whose birth name was Katherine Feeney, had long battled cancer . A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films .
 
-# Generated:
-#  Actress: Sally Forrest was in the 1951 Ida Lupino-directed film 'Hard, Fast and Beautiful' (left) and the 1956 Fritz Lang movie 'While the City Sleeps' A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films including the critical and commercial success Not Wanted, Never Fear and Hard, Fast and Beautiful. Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleeps died on March 15 at her home in Beverly Hills, California. Forrest appeared as herself in an episode of The Ed Sullivan Show and three episodes of The Dinah Shore Chevy Show, her iMDB page says.
+# === BART (facebook/bart-large-cnn) ===
+#  Forrest, whose birth name was Katherine Feeney, was 86 and had long battled cancer. A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films including Not Wanted, Never Fear and Hard, Fast and Beautiful. Some of Forrest's other film credits included Bannerline, Son of Sinbad, and Excuse My Dust.
+#   ROUGE-1: 0.6154  ROUGE-2: 0.5217  ROUGE-L: 0.5470  BLEU: 0.4565  Perplexity: 1.2958  BERTScore: 0.8481
 
-# ROUGE-1: 0.5137
-# ROUGE-2: 0.4641
-# ROUGE-L: 0.2951
-# BLEU: 0.32048878951975573
-# Perplexity: None
-# BERTScore: 0.8429293036460876
+# === T5 (t5-base) ===
+#  Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleeps, died on March 15 at her home in Beverly Hills, California . Forrest, whose birth name was Katherine Feeney, was 86 and had long battled cancer .
+#   ROUGE-1: 0.6727  ROUGE-2: 0.5741  ROUGE-L: 0.6364  BLEU: 0.5323
 
-# === BART ===
-# Example 1:
-#   Summary: Actress: Sally Forrest was in the 1951 Ida Lupino-directed film 'Hard, Fast and Beautiful' (left) and the 1956 Fritz Lang movie 'While the City Sleeps' A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films including the critical and commercial success Not Wanted, Never Fear and Hard, Fast and Beautiful. Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleeps died on March 15 at her home in Beverly Hills, California. Forrest appeared as herself in an episode of The Ed Sullivan Show and three episodes of The Dinah Shore Chevy Show, her iMDB page says.
-#   BLEU: 0.32048878951975573
-#   ROUGE-1: 0.5136612021857924
-#   ROUGE-2: 0.46408839779005523
-#   ROUGE-L: 0.29508196721311475
-# ----------------------------------------
+# === PEGASUS (google/pegasus-cnn_dailymail) ===
+#  Sally Forrest graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleeps .<n>Forrest, whose birth name was Katherine Feeney, was 86 and had long cancer .<n>A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films .
+#   ROUGE-1: 0.8034  ROUGE-2: 0.7130  ROUGE-L: 0.8034  BLEU: 0.6402
 
-# === PEGASUS ===
-# Example 1:
-#   Summary: Actress: Sally Forrest was in the 1951 Ida Lupino-directed film 'Hard, Fast and Beautiful' (left) and the 1956 Fritz Lang movie 'While the City Sleeps' A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films including the critical and commercial success Not Wanted, Never Fear and Hard, Fast and Beautiful. Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleeps died on March 15 at her home in Beverly Hills, California. Forrest appeared as herself in an episode of The Ed Sullivan Show and three episodes of The Dinah Shore Chevy Show, her iMDB page says.
-#   BLEU: 0.32048878951975573
-#   ROUGE-1: 0.5136612021857924
-#   ROUGE-2: 0.46408839779005523
-#   ROUGE-L: 0.29508196721311475
-# ----------------------------------------
-# === T5 ===
-# Example 1:
-#   Summary: Actress: Sally Forrest was in the 1951 Ida Lupino-directed film 'Hard, Fast and Beautiful' (left)and the 1956 Fritz Lang movie 'While the City Sleeps' A San Diego native, Forrest became a protege of Hollywood trailblazer Ida Lupino, who cast her in starring roles in films including the critical and commercial success Not Wanted, Never Fear and Hard, Fast and Beautiful. Sally Forrest, an actress-dancer who graced the silver screen throughout the '40s and '50s in MGM musicals and films such as the 1956 noir While the City Sleepsdied on March 15 at her home in Beverly Hills, California. Forrest appeared as herself in an episode of The Ed Sullivan Show and three episodes of The Dinah Shore Chevy Show, her iMDB page says.
-#   BLEU: 0.32048878951975573
-#   ROUGE-1: 0.5136612021857924
-#   ROUGE-2: 0.46408839779005523
-#   ROUGE-L: 0.29508196721311475
+# Note: PEGASUS emits a literal "<n>" token in place of newlines;
+# this is a known tokenizer artifact, not a data error.
+
+# ==========================================================
+# 50-example averages per model (see Group_15_NLP_Assignment2.pdf
+# section 3.2 for the full table and section 3.3 for the ROUGE-1
+# distribution across all 50 examples):
+#   BART:    ROUGE-1 0.3942  ROUGE-2 0.1998  ROUGE-L 0.3074  BLEU 0.1070  Perplexity 1.2483  BERTScore 0.8182
+#   T5:      ROUGE-1 0.3179  ROUGE-2 0.1356  ROUGE-L 0.2311  BLEU 0.0605  Perplexity 1.2490  BERTScore 0.7899
+#   PEGASUS: ROUGE-1 0.3841  ROUGE-2 0.1751  ROUGE-L 0.2904  BLEU 0.0903  Perplexity 1.2095  BERTScore 0.8048
+# ==========================================================
 
 # Execution Completed
